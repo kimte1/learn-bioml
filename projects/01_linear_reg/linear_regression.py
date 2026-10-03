@@ -1,9 +1,7 @@
 """
 Univariate linear regression via batch gradient descent
 
-Dataset: Barroso-Gomila et al. 2023 RNF4 BioE3 proximity-labeling proteomics screen (data/barroso-gomila2023.xlsx)
-
-x and y are log2 LFQ intensities of a wt and mutant protein RNF4
+Dataset: delaney-esol.csv
 """
 
 from __future__ import annotations
@@ -27,9 +25,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 FIG_DIR = Path(__file__).resolve().parent / "fig"
 
-SHEET_NAME = "RNF4 BioE3"
-X_COL = "RNF4WT_1"
-Y_COL = "RNF4CA_1"
+# SHEET_NAME = "RNF4 BioE3"
+X_COL = "Molecular Weight"
+Y_COL = "measured log solubility in mols per litre"
 
 LEARNING_RATES = np.logspace(-4, np.log10(1.5), 40)
 DIVERGED_CAP = 1.0e4  # sentinel ceiling so diverging runs are still visible on a log-scale plot
@@ -62,9 +60,9 @@ def build_parser():
 
 def load_xy() -> tuple[np.ndarray, np.ndarray]:
     # the excel file has multiple sheets
-    xlsx_files = sorted(glob.glob(str(DATA_DIR / "barroso-gomila2023.xlsx")))
+    # xlsx_files = sorted(glob.glob(str(DATA_DIR / "barroso-gomila2023.xlsx")))
 
-    df = pd.read_excel(xlsx_files[0], sheet_name=SHEET_NAME) # load the first sheet
+    df = pd.read_csv(DATA_DIR / "delaney-esol.csv") # load the first sheet
     x = df[X_COL].to_numpy(dtype=float)
     y = df[Y_COL].to_numpy(dtype=float)
     return x, y

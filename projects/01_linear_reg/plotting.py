@@ -52,8 +52,8 @@ def plot_fit(
         label="Gradient descent fit",
     )
 
-    plt.xlabel("log2 LFQ intensity, RNF4-WT")
-    plt.ylabel("log2 LFQ intensity, RNF4-mutant")
+    plt.xlabel("Molecular Weight")
+    plt.ylabel("measured log solubility (mol/L")
 
     plt.legend()
     plt.tight_layout()
@@ -118,33 +118,31 @@ def plot_lr_sweep(
     final_losses: np.ndarray,
     path: Path) -> None:
 
-    diverged = final_losses >= DIVERGED_CAP
+    # diverged = final_losses >= DIVERGED_CAP
 
     plt.figure(figsize=(6.5, 5))
     plt.plot(
-        learning_rates[~diverged],
-        final_losses[~diverged],
+        learning_rates,
+        final_losses,
         "o-",
         color="steelblue",
         markersize=4,
     )
-    if diverged.any():
-        plt.scatter(
-            learning_rates[diverged],
-            final_losses[diverged],
-            color="crimson",
-            marker="x",
-            s=50,
-            label="Diverged (capped for display)",
-        )
-
-    plt.axvline(0.5, color="gray", linestyle=":", linewidth=1, label="Theoretical optimum (lr=0.5)")
-    plt.xscale("log")
+    # if diverged.any():
+    #     plt.scatter(
+    #         learning_rates[diverged],
+    #         final_losses[diverged],
+    #         color="crimson",
+    #         marker="x",
+    #         s=50,
+    #         label="Diverged (capped for display)",
+    #     )
+    # plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Learning rate")
     plt.ylabel("MSE loss at final epoch")
     plt.title("Effect of learning rate on final training loss")
-    plt.legend(fontsize=8)
+    # plt.legend(fontsize=8)
     plt.tight_layout()
     plt.savefig(path, dpi=150)
     plt.close()
