@@ -113,6 +113,47 @@ def plot_fit_evolution(
 
 
 
+def plot_standardization(
+    x_raw: np.ndarray,
+    x_std: np.ndarray,
+    feature_name: str,
+    path: Path,
+) -> None:
+    """Side-by-side histograms of a feature before and after z-score standardization.
+
+    standardize() only re-centers (subtracts the mean) and re-scales (divides
+    by the std) the data -- it does not change the shape of the distribution.
+    This plot makes that visible: same histogram shape in both panels, just
+    shifted so the mean lands on 0 and the +/-1 std lines land on +/-1.
+    """
+    mean_raw, std_raw = x_raw.mean(), x_raw.std()
+    mean_z, std_z = x_std.mean(), x_std.std()
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+
+    axes[0].hist(x_raw, bins=30, color="steelblue", edgecolor="white")
+    axes[0].axvline(mean_raw, color="crimson", linewidth=1.5, label=f"mean={mean_raw:.2f}")
+    axes[0].axvline(mean_raw - std_raw, color="crimson", linestyle="--", linewidth=1, label=f"mean ± 1 std (std={std_raw:.2f})")
+    axes[0].axvline(mean_raw + std_raw, color="crimson", linestyle="--", linewidth=1)
+    axes[0].set_title(f"Raw {feature_name}")
+    axes[0].set_xlabel(feature_name)
+    axes[0].set_ylabel("Count")
+    axes[0].legend(fontsize=8)
+
+    axes[1].hist(x_std, bins=30, color="steelblue", edgecolor="white")
+    axes[1].axvline(mean_z, color="crimson", linewidth=1.5, label=f"mean={mean_z:.2f}")
+    axes[1].axvline(mean_z - std_z, color="crimson", linestyle="--", linewidth=1, label=f"mean ± 1 std (std={std_z:.2f})")
+    axes[1].axvline(mean_z + std_z, color="crimson", linestyle="--", linewidth=1)
+    axes[1].set_title(f"Standardized {feature_name}")
+    axes[1].set_xlabel(f"({feature_name} - mean) / std")
+    axes[1].legend(fontsize=8)
+
+    fig.suptitle("What standardize() does: re-center to mean 0, re-scale to std 1 (same shape)")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def plot_lr_sweep(
     learning_rates: np.ndarray,
     final_losses: np.ndarray,

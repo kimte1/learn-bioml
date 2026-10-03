@@ -18,7 +18,8 @@ from plotting import (
     plot_loss,
     plot_fit,
     plot_fit_evolution,
-    plot_lr_sweep
+    plot_lr_sweep,
+    plot_standardization,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -167,6 +168,7 @@ def main() -> None:
     plot_fit(x, y, gd_intercept, gd_slope,FIG_DIR / "y_vs_x_fit.png")
     plot_fit_evolution(x, y, snapshots, x_mean, x_scale, FIG_DIR / "fit_evolution.png")
     plot_lr_sweep(LEARNING_RATES, final_losses, FIG_DIR / "lr_sweep.png")
+    plot_standardization(x, x_std, X_COL, FIG_DIR / "standardization.png")
 
 
 if __name__ == "__main__":
