@@ -1,4 +1,4 @@
 
-/data has the following files:
+/data has the following datasets:
 
-- barroso-gomila2023.xlsx is Supp Data 1 from Barroso-Gomila et al. (2023) https://doi.org/10.1038/s41467-023-43326-8
+- delaney-esol.csv is from https://github.com/deepchem/deepchem/tree/master/datasets
