@@ -3,7 +3,7 @@ Univariate linear regression via batch gradient descent
 
 Dataset: Barroso-Gomila et al. 2023 RNF4 BioE3 proximity-labeling proteomics screen (data/barroso-gomila2023.xlsx)
 
-x and y are log2 LFQ intensities of a wt and mutant protein RNF4 
+x and y are log2 LFQ intensities of a wt and mutant protein RNF4
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ import pandas as pd
 
 
 from plotting import (
-    plot_loss, 
-    plot_fit, 
+    plot_loss,
+    plot_fit,
     plot_fit_evolution,
     plot_lr_sweep
 )
@@ -78,10 +78,10 @@ def standardize(a: np.ndarray) -> tuple[np.ndarray, float, float]:
 
 
 def linear_reg(
-    x: np.ndarray, 
-    y: np.ndarray, 
-    lr: float, 
-    n_epochs: int, 
+    x: np.ndarray,
+    y: np.ndarray,
+    lr: float,
+    n_epochs: int,
     snapshot_interval: int = 20
 ) -> tuple[float, float, list[float], list[tuple[int, float, float]]]:
     """
@@ -101,8 +101,8 @@ def linear_reg(
         error = y_pred - y
         loss_history.append(float(np.mean(error**2)))
 
-        grad_intercept = (2.0 / n) * np.sum(error) 
-        grad_slope = (2.0 / n) * np.sum(error * x) 
+        grad_intercept = (2.0 / n) * np.sum(error)
+        grad_slope = (2.0 / n) * np.sum(error * x)
         intercept -= lr * grad_intercept
         slope -= lr * grad_slope
         if epoch % snapshot_interval == 0 or epoch == n_epochs:
@@ -113,9 +113,9 @@ def linear_reg(
 
 
 def sweep_final_loss(
-    x_std: np.ndarray, 
-    y: np.ndarray, 
-    learning_rates: np.ndarray, 
+    x_std: np.ndarray,
+    y: np.ndarray,
+    learning_rates: np.ndarray,
     n_epochs: int
 ) -> np.ndarray:
 
@@ -123,10 +123,10 @@ def sweep_final_loss(
     for lr in learning_rates:
         with np.errstate(over="ignore", invalid="ignore"):
             _, _, loss_history, _ = linear_reg(
-                x_std, 
-                y, 
-                lr, 
-                n_epochs, 
+                x_std,
+                y,
+                lr,
+                n_epochs,
                 snapshot_interval=n_epochs
             )
         final_loss = loss_history[-1]
@@ -136,21 +136,21 @@ def sweep_final_loss(
     return np.array(final_losses)
 
 
-    
+
 def main() -> None:
     args = build_parser()
 
     FIG_DIR.mkdir(exist_ok=True)
 
     x, y = load_xy()
-    
+
     x_std, x_mean, x_scale = standardize(x)
 
     b, slope, loss_history, snapshots = linear_reg(
-        x_std, 
-        y, 
-        args.lr, 
-        args.epochs, 
+        x_std,
+        y,
+        args.lr,
+        args.epochs,
         args.snapshot_interval
     )
 
@@ -167,7 +167,7 @@ def main() -> None:
 
     plot_loss(loss_history, FIG_DIR / "loss_vs_epoch.png")
     plot_fit(x, y, gd_intercept, gd_slope,FIG_DIR / "y_vs_x_fit.png")
-    plot_fit_evolution(x, y, snapshots, x_mean, x_scale, FIG_DIR / "fit_evolution.png")    
+    plot_fit_evolution(x, y, snapshots, x_mean, x_scale, FIG_DIR / "fit_evolution.png")
     plot_lr_sweep(LEARNING_RATES, final_losses, FIG_DIR / "lr_sweep.png")
 
 

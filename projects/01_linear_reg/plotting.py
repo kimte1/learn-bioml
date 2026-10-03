@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 
-DIVERGED_CAP = 1.0e4 
+DIVERGED_CAP = 1.0e4
 
 
 
@@ -37,10 +37,10 @@ def plot_fit(
     plt.figure(figsize=(6, 5))
 
     plt.scatter(
-        x, 
-        y, 
-        s=12, 
-        alpha=0.5, 
+        x,
+        y,
+        s=12,
+        alpha=0.5,
         label=f"Proteins (n={x.size})")
 
     # predicted fit
@@ -51,10 +51,10 @@ def plot_fit(
         color="crimson",
         label="Gradient descent fit",
     )
-    
+
     plt.xlabel("log2 LFQ intensity, RNF4-WT")
     plt.ylabel("log2 LFQ intensity, RNF4-mutant")
-    
+
     plt.legend()
     plt.tight_layout()
     plt.savefig(path, dpi=150)
@@ -75,12 +75,12 @@ def plot_fit_evolution(
 
     # raw data
     plt.scatter(
-        x, 
-        y, 
-        s=12, 
-        alpha=0.4, 
-        color="gray", 
-        label=f"Proteins (n={x.size})", 
+        x,
+        y,
+        s=12,
+        alpha=0.4,
+        color="gray",
+        label=f"Proteins (n={x.size})",
         zorder=1
     )
 
@@ -94,9 +94,9 @@ def plot_fit_evolution(
         slope = slope_std / x_scale
         intercept = intercept_std - slope_std * x_mean / x_scale
         plt.plot(
-            x_line, 
-            intercept + slope * x_line, 
-            color=cmap(norm(epoch)), 
+            x_line,
+            intercept + slope * x_line,
+            color=cmap(norm(epoch)),
             zorder=2
         )
 
@@ -114,8 +114,8 @@ def plot_fit_evolution(
 
 
 def plot_lr_sweep(
-    learning_rates: np.ndarray, 
-    final_losses: np.ndarray, 
+    learning_rates: np.ndarray,
+    final_losses: np.ndarray,
     path: Path) -> None:
 
     diverged = final_losses >= DIVERGED_CAP
@@ -137,7 +137,7 @@ def plot_lr_sweep(
             s=50,
             label="Diverged (capped for display)",
         )
-    
+
     plt.axvline(0.5, color="gray", linestyle=":", linewidth=1, label="Theoretical optimum (lr=0.5)")
     plt.xscale("log")
     plt.yscale("log")
