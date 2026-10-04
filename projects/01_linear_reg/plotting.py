@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
+import seaborn as sns
+
 
 DIVERGED_CAP = 1.0e4
 
@@ -19,11 +21,37 @@ def plot_loss(
     plt.ylabel("MSE loss (standardized x)")
     plt.title("Batch gradient descent convergence")
 
-    # plt.yscale("log")
     plt.tight_layout()
     plt.savefig(path, dpi=150)
     plt.close()
 
+
+
+def plot_weight_evolution(
+    snapshots: list[tuple[int, float, float]],
+    path: Path,
+) -> None:
+
+    plt.figure(figsize=(6, 4))
+
+    for epoch, intercept, slope in snapshots:
+        sns.scatterplot(
+            x=[epoch], 
+            y=[slope],
+            color="blue",
+            alpha=0.5)
+        sns.scatterplot(
+            x=[epoch],
+            y=[intercept],
+            color="crimson",
+            alpha=0.5)
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Weight or Slope value")
+    plt.legend(["slope", "intercept"])
+    plt.tight_layout()
+    plt.savefig(path, dpi=150)
+    plt.close()
 
 
 def plot_fit(

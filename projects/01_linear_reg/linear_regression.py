@@ -20,6 +20,7 @@ from plotting import (
     plot_fit_evolution,
     plot_lr_sweep,
     plot_standardization,
+    plot_weight_evolution,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -60,10 +61,7 @@ def build_parser():
 
 
 def load_xy() -> tuple[np.ndarray, np.ndarray]:
-    # the excel file has multiple sheets
-    # xlsx_files = sorted(glob.glob(str(DATA_DIR / "barroso-gomila2023.xlsx")))
-
-    df = pd.read_csv(DATA_DIR / "delaney-esol.csv") # load the first sheet
+    df = pd.read_csv(DATA_DIR / "delaney-esol.csv")
     x = df[X_COL].to_numpy(dtype=float)
     y = df[Y_COL].to_numpy(dtype=float)
     return x, y
@@ -104,8 +102,8 @@ def linear_reg(
         grad_slope = (2.0 / n) * np.sum(error * x)
         intercept -= lr * grad_intercept
         slope -= lr * grad_slope
-        if epoch % snapshot_interval == 0 or epoch == n_epochs:
-            snapshots.append((epoch, intercept, slope))
+        # if epoch % snapshot_interval == 0 or epoch == n_epochs:
+        snapshots.append((epoch, intercept, slope))
     return intercept, slope, loss_history, snapshots
 
 
@@ -157,18 +155,45 @@ def main() -> None:
     gd_slope = slope / x_scale
     gd_intercept = b - slope * x_mean / x_scale
 
-    # y_pred_gd = gd_intercept + gd_slope * x
-
     # re-run linear_reg with different learning rates
     # keep track of final losses for each learning rate
     final_losses = sweep_final_loss(x_std, y, LEARNING_RATES, args.epochs)
 
 
-    plot_loss(loss_history, FIG_DIR / "loss_vs_epoch.png")
-    plot_fit(x, y, gd_intercept, gd_slope,FIG_DIR / "y_vs_x_fit.png")
-    plot_fit_evolution(x, y, snapshots, x_mean, x_scale, FIG_DIR / "fit_evolution.png")
-    plot_lr_sweep(LEARNING_RATES, final_losses, FIG_DIR / "lr_sweep.png")
-    plot_standardization(x, x_std, X_COL, FIG_DIR / "standardization.png")
+    plot_loss(
+        loss_history,
+        FIG_DIR / "loss_vs_epoch.png",
+    )
+    plot_weight_evolution(
+        snapshots,
+        FIG_DIR / "weight_evolution.png",
+    )
+    plot_fit(
+        x, 
+        y, 
+        gd_intercept, 
+        gd_slope,
+        FIG_DIR / "y_vs_x_fit.png",
+    )
+    plot_fit_evolution(
+        x,
+        y,
+        snapshots,
+        x_mean,
+        x_scale,
+        FIG_DIR / "fit_evolution.png",
+    )
+    plot_lr_sweep(
+        LEARNING_RATES,
+        final_losses,
+        FIG_DIR / "lr_sweep.png",
+    )
+    plot_standardization(
+        x,
+        x_std,
+        X_COL,
+        FIG_DIR / "standardization.png",
+    )
 
 
 if __name__ == "__main__":
