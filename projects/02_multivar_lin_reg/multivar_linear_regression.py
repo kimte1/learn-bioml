@@ -46,9 +46,9 @@ TARGET_COL = "measured log solubility in mols per litre"
 def build_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--lr", 
-        type=float, 
-        default=0.1, 
+        "--lr",
+        type=float,
+        default=0.1,
         help="Gradient descent learning rate"
     )
     parser.add_argument(
@@ -118,7 +118,7 @@ def multivar_lin_reg(
 
 
 def unstandardize_weights(
-    b_std: float, 
+    b_std: float,
     w_std: np.ndarray,
     x_mean: np.ndarray,
     x_scale: np.ndarray,
@@ -133,10 +133,10 @@ def unstandardize_weights(
 
 
 def add_near_duplicate_feature(
-    X: np.ndarray, 
-    feature_names: list[str], 
-    source_col: str, 
-    noise_frac: float = 0.02, 
+    X: np.ndarray,
+    feature_names: list[str],
+    source_col: str,
+    noise_frac: float = 0.02,
     seed: int = 0
 ) -> tuple[np.ndarray, list[str]]:
     """
@@ -167,7 +167,7 @@ def add_random_noise_features(
     Add `n_noise` columns of pure random Gaussian noise -- unrelated to
     y or to any real feature -- to X.
 
-    These columns carry no real signal. 
+    These columns carry no real signal.
     """
     rng = np.random.default_rng(seed)
     noise = rng.normal(size=(X.shape[0], n_noise))
@@ -211,8 +211,8 @@ def demo_p_greater_than_n(
 
     # pick n_samples random rows from X
     idx = rng.choice(
-        X.shape[0], 
-        size=n_samples, 
+        X.shape[0],
+        size=n_samples,
         replace=False
     )
     # take n_samples rows from X and add n_noise random columns of noise
@@ -229,7 +229,7 @@ def demo_p_greater_than_n(
 
     # get n samples and p features
     n, p = X_small_std.shape
-    
+
     # compute a "rank" (how many independent columns)
     rank = np.linalg.matrix_rank(X_small_std)
 
@@ -248,9 +248,9 @@ def demo_p_greater_than_n(
     )
 
     # grab one specific direction from Vt (e.g., the first null-space direction)
-    v = Vt[n]  
+    v = Vt[n]
     # rescale to w1's size
-    v = v / np.linalg.norm(v) * np.linalg.norm(w1)  # 
+    v = v / np.linalg.norm(v) * np.linalg.norm(w1)  #
     # build second weight vector by shifting w1 along that zero-effect direction
     w2 = w1 + v
 
@@ -375,10 +375,10 @@ def main() -> None:
         feature_names_dup,
         FIG_DIR / "near_duplicate_corr.png",
     )
-    
+
     X_dup_std, _, _ = standardize_matrix(X_dup)
 
-    
+
     b_dup, w_dup, loss_history_dup, weight_history_dup = multivar_lin_reg(
         X_dup_std,
         y,
@@ -397,13 +397,13 @@ def main() -> None:
         y_pred_dup,
         FIG_DIR / "predicted_vs_actual_dup.png",
     )
-    
+
     plot_weight_trajectories(
         weight_history_dup,
         feature_names_dup,
         FIG_DIR / "weight_trajectories.png",
     )
- 
+
     plot_weight_split(
         weight_history_dup,
         idx_a=0,
@@ -414,9 +414,9 @@ def main() -> None:
     )
 
     # Limitation 2: (features > n) -- p > n.
-    
-    # Shrink down to a handful of samples and pad with random features until there are more features (p) than data points (n). 
-    
+
+    # Shrink down to a handful of samples and pad with random features until there are more features (p) than data points (n).
+
     names_small, w1, w2 = demo_p_greater_than_n(
         X,
         y,
@@ -431,10 +431,10 @@ def main() -> None:
         FIG_DIR / "p_greater_than_n_solutions.png",
     )
 
- 
+
     # Limitation 3: overfitting / high variance.
     # as more features are added, model keeps fitting the training set better,
-    
+
     noise_counts, train_mse, test_mse, n_train = demo_overfitting_vs_p(
         X,
         y,
@@ -442,7 +442,7 @@ def main() -> None:
         max_noise=150,
         step=5,
     )
-    
+
     plot_overfitting_curve(
         noise_counts,
         train_mse,
@@ -453,10 +453,10 @@ def main() -> None:
 
 
     # Limitation 4: no built-in feature selection.
-    # Fit a model with a batch of pure-noise features mixed in and look at the resulting weights directly: 
-    # OLS has no mechanism to recognize a feature is irrelevant and zero it out, 
+    # Fit a model with a batch of pure-noise features mixed in and look at the resulting weights directly:
+    # OLS has no mechanism to recognize a feature is irrelevant and zero it out,
     # so even noise columns get a weight, just from chance correlation with y
-    
+
     X_noisy, feature_names_noisy = add_random_noise_features(
         X,
         FEATURE_COLS,
@@ -465,7 +465,7 @@ def main() -> None:
     )
     X_noisy_std, _, _ = standardize_matrix(X_noisy)
     _, w_noisy = ols_closed_form(X_noisy_std, y)
-    
+
     plot_noise_feature_weights(
         feature_names_noisy,
         w_noisy,
