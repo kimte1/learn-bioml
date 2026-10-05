@@ -1,7 +1,11 @@
 """
-Multivariable linear regression using 2 variables
+Multivariable linear regression using 2 variables (for visualization)
 
-Also demonstrates why linear regression breaks down if features are highly correlated (foreshadowing Ridge/Lasso, which are implemented in 03_regularized_reg).
+Demonstrates 4 reasons gradient descent breaks down as the feature set grows
+  1. Multicollinearity -> undetermined weight split
+  2. More features than samples (e.g. p > n) -> X^T X singular, no unique solution
+  3. Overfitting / high variance -- no complexity penalty -> train error down, test error up
+  4. No feature selection -> irrelevant/noise features still get nonzero weight
 
 Dataset: Delaney (2004) ESOL aqueous solubility dataset (data/delaney-esol.csv).
 
@@ -24,6 +28,9 @@ from plotting import (
     plot_feat_corr,
     plot_weight_trajectories,
     plot_weight_split,
+    plot_null_space_solutions,
+    plot_overfitting_curve,
+    plot_noise_feature_weights,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -53,7 +60,7 @@ def build_parser() -> argparse.Namespace:
     parser.add_argument(
         "--limitation-epochs",
         type=int,
-        default=3000,
+        default=1000,
         help="Number of gradient descent epochs for the near-duplicate-feature demo "
         "(needs to be much larger: the near-duplicate pair converges far slower than the rest)",
     )
@@ -140,7 +147,170 @@ def add_near_duplicate_feature(
     duplicate = X[:, j] + rng.normal(0, noise_frac * X[:, j].std(), size=X.shape[0])
     X_aug = np.column_stack([X, duplicate])
     names_aug = feature_names + [f"{source_col} (near-duplicate)"]
+
+    # X_aug = [
+    #     molecular weight,
+    #     num_rings,
+    #     molecular_weight_dup,
+    # ]
     return X_aug, names_aug
+
+
+
+def add_random_noise_features(
+    X: np.ndarray,
+    feature_names: list[str],
+    n_noise: int,
+    seed: int = 0,
+) -> tuple[np.ndarray, list[str]]:
+    """
+    Add `n_noise` columns of pure random Gaussian noise -- unrelated to
+    y or to any real feature -- to X.
+
+    These columns carry no real signal. 
+    """
+    rng = np.random.default_rng(seed)
+    noise = rng.normal(size=(X.shape[0], n_noise))
+    X_aug = np.column_stack([X, noise])
+    names_aug = feature_names + [f"noise_{i}" for i in range(n_noise)]
+    return X_aug, names_aug
+
+
+
+def ols_closed_form(X: np.ndarray, y: np.ndarray) -> tuple[float, np.ndarray]:
+    """
+    Exact OLS solution via SVD-based least squares (np.linalg.lstsq).
+
+    Used instead of multivar_lin_reg's gradient descent for the demos
+    below: as p grows, gradient descent needs far more epochs to fully
+    converge, which would conflate "hasn't converged yet" with "this is
+    what OLS's overfitting / no-selection limitations actually look like."
+    lstsq also still returns an answer (the minimum-norm one) even when
+    X^T X is singular, which is itself the point of limitation 2.
+    """
+    x_mean = X.mean(axis=0)
+    y_mean = y.mean()
+    w, *_ = np.linalg.lstsq(X - x_mean, y - y_mean, rcond=None)
+    b = y_mean - x_mean @ w
+    return b, w
+
+
+
+def demo_p_greater_than_n(
+    X: np.ndarray,
+    y: np.ndarray,
+    feature_names: list[str],
+    n_samples: int,
+    n_noise: int,
+    seed: int = 0,
+) -> tuple[list[str], np.ndarray, np.ndarray]:
+    """
+    Subsample down to just `n_samples` rows and pad with `n_noise` random columns so there are more features (p) than data points (n)
+    """
+    rng = np.random.default_rng(seed)
+
+    # pick n_samples random rows from X
+    idx = rng.choice(
+        X.shape[0], 
+        size=n_samples, 
+        replace=False
+    )
+    # take n_samples rows from X and add n_noise random columns of noise
+    X_small, names_small = add_random_noise_features(
+        X[idx],
+        feature_names,
+        n_noise,
+        seed=seed,
+    )
+    # get the corresponding y values
+    y_small = y[idx]
+    # standardize the features
+    X_small_std, _, _ = standardize_matrix(X_small)
+
+    # get n samples and p features
+    n, p = X_small_std.shape
+    
+    # compute a "rank" (how many independent columns)
+    rank = np.linalg.matrix_rank(X_small_std)
+
+    # solve for one set of weights that fit the data
+    # here lstsq returns the smallest magnitude solution
+    w1, *_ = np.linalg.lstsq(
+        X_small_std,
+        y_small,
+        rcond=None,
+    )
+
+    # use SVD to get Vt, which contains the directions in feature space
+    _, _, Vt = np.linalg.svd(
+        X_small_std,
+        full_matrices=True,
+    )
+
+    # grab one specific direction from Vt (e.g., the first null-space direction)
+    v = Vt[n]  
+    # rescale to w1's size
+    v = v / np.linalg.norm(v) * np.linalg.norm(w1)  # 
+    # build second weight vector by shifting w1 along that zero-effect direction
+    w2 = w1 + v
+
+    pred1 = X_small_std @ w1
+    pred2 = X_small_std @ w2
+
+    return names_small, w1, w2
+
+
+
+def demo_overfitting_vs_p(
+    X: np.ndarray,
+    y: np.ndarray,
+    feature_names: list[str],
+    max_noise: int,
+    step: int,
+    train_frac: float = 0.7,
+    seed: int = 0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
+    """
+    Limitation 3: overfitting / high variance as useless features pile up.
+
+    OLS minimizes training error with no penalty on coefficient size or
+    model complexity, so adding more features -- even pure noise -- can
+    only ever help it fit the training set better. Track train vs. held-out
+    MSE as random noise columns are added: train MSE keeps dropping while
+    test MSE eventually turns back up once the model starts fitting
+    training-set noise instead of the real relationship.
+    """
+    rng = np.random.default_rng(seed)
+    n = X.shape[0]
+    perm = rng.permutation(n)
+    n_train = int(train_frac * n)
+    train_idx, test_idx = perm[:n_train], perm[n_train:]
+
+    noise_counts = np.arange(0, max_noise + 1, step)
+    train_mse = np.zeros(len(noise_counts))
+    test_mse = np.zeros(len(noise_counts))
+
+    for i, n_noise in enumerate(noise_counts):
+        X_aug, _ = add_random_noise_features(X, feature_names, int(n_noise), seed=seed)
+        X_train, X_test = X_aug[train_idx], X_aug[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        # Standardize using train-set statistics only, applied to both splits --
+        # fitting on all the data (including test) would leak information.
+        X_train_std, mean, scale = standardize_matrix(X_train)
+        X_test_std = (X_test - mean) / scale
+
+        b, w = ols_closed_form(X_train_std, y_train)
+
+        train_pred = b + X_train_std @ w
+        test_pred = b + X_test_std @ w
+        train_mse[i] = np.mean((y_train - train_pred) ** 2)
+        test_mse[i] = np.mean((y_test - test_pred) ** 2)
+
+    print(f"\nLimitation 3 (overfitting): train MSE {train_mse[0]:.4f} -> {train_mse[-1]:.4f} "
+          f"as {max_noise} noise features are added, test MSE {test_mse[0]:.4f} -> {test_mse[-1]:.4f}")
+
+    return noise_counts, train_mse, test_mse, n_train
 
 
 
@@ -190,7 +360,8 @@ def main() -> None:
         FIG_DIR / "predicted_vs_actual.png",
     )
 
-    # what happens when a feature is near-duplicate of another?
+    # Limitation 1: multicollinearity.
+    # duplicate 'molecular weight' feature (but with noise)
     X_dup, feature_names_dup = add_near_duplicate_feature(
         X,
         FEATURE_COLS,
@@ -198,14 +369,16 @@ def main() -> None:
         noise_frac=0.2
     )
 
-    X_dup_std, _, _ = standardize_matrix(X_dup)
-
+    # show noise in 'molecular weight' dup feat
     plot_feat_corr(
         X_dup,
         feature_names_dup,
         FIG_DIR / "near_duplicate_corr.png",
     )
+    
+    X_dup_std, _, _ = standardize_matrix(X_dup)
 
+    
     b_dup, w_dup, loss_history_dup, weight_history_dup = multivar_lin_reg(
         X_dup_std,
         y,
@@ -213,19 +386,24 @@ def main() -> None:
         args.limitation_epochs,
     )
 
-    predictions_dup = X_dup_std @ w_dup + b_dup
-
-    plot_predicted_vs_actual(
-        predictions_dup,
-        y,
-        FIG_DIR / "predicted_vs_actual_dup.png",
+    plot_loss(
+        loss_history_dup,
+        FIG_DIR / "loss_history_dup.png",
     )
 
+    y_pred_dup = X_dup_std @ w_dup + b_dup
+    plot_predicted_vs_actual(
+        y,
+        y_pred_dup,
+        FIG_DIR / "predicted_vs_actual_dup.png",
+    )
+    
     plot_weight_trajectories(
         weight_history_dup,
         feature_names_dup,
         FIG_DIR / "weight_trajectories.png",
     )
+ 
     plot_weight_split(
         weight_history_dup,
         idx_a=0,
@@ -233,6 +411,66 @@ def main() -> None:
         name_a=feature_names_dup[0],
         name_b=feature_names_dup[2],
         path=FIG_DIR / "weight_split.png",
+    )
+
+    # Limitation 2: (features > n) -- p > n.
+    
+    # Shrink down to a handful of samples and pad with random features until there are more features (p) than data points (n). 
+    
+    names_small, w1, w2 = demo_p_greater_than_n(
+        X,
+        y,
+        FEATURE_COLS,
+        n_samples=10,
+        n_noise=20,
+    )
+    plot_null_space_solutions(
+        names_small,
+        w1,
+        w2,
+        FIG_DIR / "p_greater_than_n_solutions.png",
+    )
+
+ 
+    # Limitation 3: overfitting / high variance.
+    # as more features are added, model keeps fitting the training set better,
+    
+    noise_counts, train_mse, test_mse, n_train = demo_overfitting_vs_p(
+        X,
+        y,
+        FEATURE_COLS,
+        max_noise=150,
+        step=5,
+    )
+    
+    plot_overfitting_curve(
+        noise_counts,
+        train_mse,
+        test_mse,
+        n_train,
+        FIG_DIR / "overfitting_vs_num_features.png",
+    )
+
+
+    # Limitation 4: no built-in feature selection.
+    # Fit a model with a batch of pure-noise features mixed in and look at the resulting weights directly: 
+    # OLS has no mechanism to recognize a feature is irrelevant and zero it out, 
+    # so even noise columns get a weight, just from chance correlation with y
+    
+    X_noisy, feature_names_noisy = add_random_noise_features(
+        X,
+        FEATURE_COLS,
+        n_noise=20,
+        seed=0,
+    )
+    X_noisy_std, _, _ = standardize_matrix(X_noisy)
+    _, w_noisy = ols_closed_form(X_noisy_std, y)
+    
+    plot_noise_feature_weights(
+        feature_names_noisy,
+        w_noisy,
+        len(FEATURE_COLS),
+        FIG_DIR / "noise_feature_weights.png",
     )
 
 
