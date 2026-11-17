@@ -27,16 +27,14 @@ def _entropy(counts: np.ndarray) -> float:
 _CRITERIA = {"gini": _gini, "entropy": _entropy}
 
 
+@dataclass(slots=True)
 class Node:
-    __slots__ = ("feature_idx", "threshold", "left", "right", "proba", "is_leaf")
-
-    def __init__(self) -> None:
-        self.feature_idx: int | None = None
-        self.threshold: float | None = None
-        self.left: "Node | None" = None
-        self.right: "Node | None" = None
-        self.proba: np.ndarray | None = None
-        self.is_leaf: bool = False
+    feature_idx: int | None = None
+    threshold: float | None = None
+    left: "Node | None" = None
+    right: "Node | None" = None
+    proba: np.ndarray | None = None
+    is_leaf: bool = False
 
 
 
