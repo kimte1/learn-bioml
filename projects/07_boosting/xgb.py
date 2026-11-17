@@ -23,16 +23,14 @@ import numpy as np
 LAMBDA_EPS = 1e-12
 
 
+@dataclass(slots=True)
 class _Node:
-    __slots__ = ("feature_idx", "threshold", "left", "right", "value", "is_leaf")
-
-    def __init__(self) -> None:
-        self.feature_idx: int | None = None
-        self.threshold: float | None = None
-        self.left: "_Node | None" = None
-        self.right: "_Node | None" = None
-        self.value: float = 0.0
-        self.is_leaf: bool = False
+    feature_idx: int | None = None
+    threshold: float | None = None
+    left: "_Node | None" = None
+    right: "_Node | None" = None
+    value: float = 0.0
+    is_leaf: bool = False
 
 
 @dataclass

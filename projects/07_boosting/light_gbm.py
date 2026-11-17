@@ -38,33 +38,29 @@ import numpy as np
 LAMBDA_EPS = 1e-12
 
 
+@dataclass(slots=True)
 class _Node:
-    __slots__ = ("feature_idx", "threshold", "left", "right", "value", "is_leaf")
-
-    def __init__(self) -> None:
-        self.feature_idx: int | None = None
-        self.threshold: float | None = None
-        self.left: "_Node | None" = None
-        self.right: "_Node | None" = None
-        self.value: float = 0.0
-        self.is_leaf: bool = False
+    feature_idx: int | None = None
+    threshold: float | None = None
+    left: "_Node | None" = None
+    right: "_Node | None" = None
+    value: float = 0.0
+    is_leaf: bool = False
 
 
+@dataclass(slots=True)
 class _Leaf:
     """A frontier node in the leaf-wise growth queue: holds the sample
     indices it owns, its depth, and its best candidate split."""
 
-    __slots__ = ("node", "idx", "depth", "gain", "feature_idx", "threshold", "left_idx", "right_idx")
-
-    def __init__(self, node: _Node, idx: np.ndarray, depth: int) -> None:
-        self.node = node
-        self.idx = idx
-        self.depth = depth
-        self.gain = -np.inf
-        self.feature_idx: int | None = None
-        self.threshold: float | None = None
-        self.left_idx: np.ndarray | None = None
-        self.right_idx: np.ndarray | None = None
+    node: _Node
+    idx: np.ndarray
+    depth: int
+    gain: float = -np.inf
+    feature_idx: int | None = None
+    threshold: float | None = None
+    left_idx: np.ndarray | None = None
+    right_idx: np.ndarray | None = None
 
 
 @dataclass
