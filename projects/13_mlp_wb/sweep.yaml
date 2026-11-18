@@ -1,0 +1,48 @@
+
+# Usage:
+#   wandb sweep sweep.yaml  
+#   wandb agent <entity>/<project>/<sweep_id> --count N     
+  
+entity: tekim
+project: learn-bioml
+
+program: main.py
+method: bayes # picks next config based on what's worked so far
+
+metric:
+  name: val_loss
+  goal: minimize
+
+# Kill underperforming trials early instead of letting every trial run its full epoch budget. 
+early_terminate:
+  type: hyperband
+  min_iter: 10
+  eta: 3
+
+parameters:
+  optimizer:
+    values: [sgd, sgd_momentum, adam, adamw]
+  lr:
+    distribution: log_uniform_values
+    min: 0.0001
+    max: 0.05
+  weight_decay:
+    values: [0.0, 0.0001, 0.001, 0.01]
+  dropout_p:
+    values: [0.0, 0.2, 0.4]
+  use_batchnorm:
+    values: [true, false]
+  scheduler:
+    values: [none, step, cosine, plateau]
+
+# Fixed across every trial in the sweep (not searched over).
+  epochs:
+    value: 150
+  patience:
+    value: 20
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args}
