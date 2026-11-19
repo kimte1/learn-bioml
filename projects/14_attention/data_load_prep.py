@@ -85,7 +85,10 @@ def load_variable_length_sequences(
 
 
 
-def one_hot_encode(sequences: list[str]) -> tuple[torch.Tensor, torch.Tensor]:
+def one_hot_encode(sequences: list[str]) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+]:
     """
     Pad `sequences` to their batch max length and one-hot encode over
     the 20 standard amino acids.
