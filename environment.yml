@@ -13,3 +13,5 @@ dependencies:
   - openpyxl
   - umap-learn
   - pytorch
+  - wandb
+ 
