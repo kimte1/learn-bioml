@@ -1,4 +1,4 @@
-ssssss"""The rigorous training pipeline this project is about: reproducible
+"""The rigorous training pipeline this project is about: reproducible
 seeding, a choice of optimizer (SGD / SGD+momentum / Adam / AdamW) and
 learning-rate schedule, gradient clipping, early stopping, and
 checkpointing -- on top of the same forward/backward loop from
