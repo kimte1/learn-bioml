@@ -1,2 +1,4 @@
 __pycache__/
 .DS_Store
+wandb/
+projects/13_mlp_wb/checkpoints/
