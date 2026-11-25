@@ -140,7 +140,7 @@ def build_lora(
     for the full explanation); everything else in the backbone stays
     frozen. Same head architecture as `build_frozen_backbone`, so any
     performance difference between the two comes from the backbone
-    adaptation, not a bigger head.
+    adaptation
     """
     backbone = AutoModel.from_pretrained(
         CHECKPOINT,

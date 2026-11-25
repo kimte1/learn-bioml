@@ -25,7 +25,8 @@ from torch import nn
 
 
 class LoRALinear(nn.Module):
-    """Wraps an existing, already-trained `nn.Linear` layer. The original
+    """
+    Wraps an existing, already-trained `nn.Linear` layer. The original
     layer's weight and bias are frozen (`requires_grad = False`) --
     # KEY SKILL: layer freezing -- so gradients never update the
     pretrained weights at all; only `lora_A` and `lora_B` are trainable.
@@ -49,15 +50,8 @@ class LoRALinear(nn.Module):
         in_features = base_layer.in_features
         out_features = base_layer.out_features
 
-        # A is initialized with small random values (same scale PyTorch
-        # uses for a fresh Linear layer's weights) so the adapter starts
-        # by contributing something nonzero but small and learnable; B is
-        # initialized to all zeros so that, at the very start of training,
-        # `B @ A == 0` and the adapted layer computes EXACTLY the same
-        # output as the original frozen layer -- fine-tuning starts from
-        # "no change at all" and gradually learns a correction, rather
-        # than starting from a random perturbation of a perfectly good
-        # pretrained layer.
+        # A is initialized with small random values
+        #  B is initialized to all zeros so that `B @ A == 0` and the adapted layer computes the same output as the original frozen layer
         self.lora_A = nn.Parameter(
             torch.randn(rank, in_features) / math.sqrt(in_features),
         )
@@ -65,20 +59,13 @@ class LoRALinear(nn.Module):
             torch.zeros(out_features, rank),
         )
 
-        # `alpha / rank` rescales the adapter's contribution so that
-        # changing `rank` alone (to make the adapter more or less
-        # expressive) doesn't also silently change how large its
-        # numerical contribution to the output is -- this is the
-        # normalization Hu et al. (2022) use, not an arbitrary choice.
         self.scaling = alpha / rank
 
     def forward(
         self,
         x: torch.Tensor,
     ) -> torch.Tensor:
-        base_output = self.base_layer(
-            x,
-        )
+        base_output = self.base_layer(x)
         lora_correction = (
             x @ self.lora_A.T @ self.lora_B.T
         ) * self.scaling
@@ -110,10 +97,11 @@ def apply_lora(
     # was happening (83.66% of parameters trainable instead of ~2%) before
     # adding this loop.
     for parameter in model.parameters():
-        parameter.requires_grad = False
+        parameter.requires_grad = False # freeze entire backbone
 
     n_layers_modified = 0
     for module in model.modules():
+        # find Attention container that has Q, K, V nn.Linear submodules
         if type(module).__name__ == "EsmSelfAttention":
             module.query = LoRALinear(
                 module.query,
