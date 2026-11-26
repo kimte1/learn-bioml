@@ -15,4 +15,4 @@ dependencies:
   - pytorch
   - wandb
   - transformers=5.24.0
- 
+  - biopython
